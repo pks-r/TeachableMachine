@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>تعرّف على الفاكهة</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+  <style>
+    body {
+      background-color: #d0f0c0; /* أخضر فاتح */
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .card input[type="file"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .card button {
+      background-color: #90ee90; /* زر أخضر فاتح */
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .card button:hover:not(:disabled) {
+      background-color: #7ccd7c; /* أخضر فاتح أغمق شوي عند المرور */
+    }
+    .card button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+    #status {
+      color: #dc3545;
+      margin-top: 1rem;
+      display: none;
+    }
+    ul#predictions {
+      list-style: none;
+      padding: 0;
+      margin-top: 1rem;
+      text-align: right;
+    }
+    ul#predictions li {
+      background: #f8f9fa;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      display: flex;
+      justify-content: space-between;
+      direction: rtl;
+    }
+    h2 {
+      color: #90ee90; /* أخضر فاتح */
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>ما نوع الفاكهة في الصورة؟ 🍎🍌🍊🥒</h2>
+    <input type="file" id="input-file" accept="image/*" />
+    <button id="classify-btn" disabled>تعرّف الآن</button>
+    <p id="status"> يمكنك الآن رفع صورة </p>
+    <ul id="predictions"></ul>
+  </div>
+
+  <script>
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/RyJcz0cfO/";
+    let model;
+
+    async function init() {
+      const modelURL = MODEL_URL + "model.json";
+      const metadataURL = MODEL_URL + "metadata.json";
+      model = await tmImage.load(modelURL, metadataURL);
+      document.getElementById("status").style.display = "block";
+      document.getElementById("classify-btn").disabled = false;
+    }
+
+    window.addEventListener("DOMContentLoaded", init);
+
+    document.getElementById("classify-btn").addEventListener("click", async () => {
+      const input = document.getElementById("input-file");
+      const file = input.files[0];
+      if (!file) {
+        alert("يرجى اختيار ملف أولاً");
+        return;
+      }
+      const img = document.createElement("img");
+      img.src = URL.createObjectURL(file);
+      await img.decode();
+
+      const predictions = await model.predict(img, false);
+
+      const list = document.getElementById("predictions");
+      list.innerHTML = "";
+
+      predictions.forEach((p) => {
+        const li = document.createElement("li");
+        const fruitName = document.createElement("span");
+        fruitName.textContent = p.className;
+
+        const probability = document.createElement("span");
+        probability.textContent = (p.probability * 100).toFixed(1) + "%";
+
+        switch (p.className.toLowerCase()) {
+          case "برتقال":
+            probability.style.color = "orange";
+            break;
+          case "موز":
+            probability.style.color = "gold";
+            break;
+          case "خيار":
+            probability.style.color = "#90ee90"; // أخضر فاتح
+            break;
+          case "تفاح":
+            probability.style.color = "red";
+            break;
+          default:
+            probability.style.color = "#333";
+        }
+
+        li.appendChild(fruitName);
+        li.appendChild(probability);
+        list.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
